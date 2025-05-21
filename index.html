@@ -1,0 +1,165 @@
+<body>
+  <svg id="spectrum-element"></svg>
+
+</body>
+<script src="https://unpkg.com/tone"></script>
+<script src="https://cdn.jsdelivr.net/gh/netizenorg/netnet-standard-library/build/nn.min.js?v=1"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="https://algorithmicmusic.online/js/create-waveform.js"></script>
+
+<script>
+  
+//---------Modified Circle Spectrum---------//
+/* global d3, Tone */
+
+function createSpectrum (opts) {
+  opts = opts || {}
+  const ele = typeof opts.ele === 'string'
+    ? document.querySelector(opts.ele)
+    : document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  if (typeof opts.ele !== 'string') {
+    document.body.appendChild(ele)
+  } else if (!ele || ele.nodeName.toLowerCase() !== 'svg') {
+    console.error('createSpectrum: "ele" expecting reference to <svg> element')
+    return
+  }
+
+  ele.style.display = 'block'
+  ele.style.width = opts.width || '700px'
+  ele.style.height = opts.height || '200px'
+  ele.style.background = opts.background || 'transparent'
+
+  const canvasWidth = parseInt(ele.style.width)
+  const canvasHeight = parseInt(ele.style.height)
+
+  const margins = { top: 50, right: 10, bottom: 30, left: 20 }
+  const plotWidth = canvasWidth - margins.left - margins.right
+  const plotHeight = canvasHeight - margins.top - margins.bottom
+
+  const sensativity = opts.sensativity || 0.08
+  const binSize = opts.binSize || 1024
+  // NOTE: using Tone.js's FFT node wasn't working correctly,
+  // kept mappting a 440 Hz tone as 880 Hz
+  // after lots of debugging the only thing that seemed to work
+  // was to replace it with the Web Audio API fft analyzers
+  const audioCtx = opts.audioCtx || Tone.context
+  const fftNode = audioCtx.createAnalyser()
+  fftNode.fftSize = binSize
+  fftNode.smoothingTimeConstant = 0.7
+  const frequencyData = new Uint8Array(fftNode.frequencyBinCount)
+  const frequencyPerBin = audioCtx.sampleRate / binSize
+
+  const svg = d3.select(ele)
+  const xRange = d3.scaleLinear().range([margins.left, plotWidth])
+  const yRange = d3.scaleLinear().range([plotHeight + margins.top, margins.top])
+
+  // const halfSR = audioCtx.sampleRate / 2
+  // xRange.domain([20, halfSR])
+  const range = opts.range || [20, 20000]
+  xRange.domain(range)
+  yRange.domain([0.0, 1.2])
+
+  const xAxis = d3.axisBottom(xRange)
+    .tickSize(3)
+    .tickValues([440, 440 * 2, 440 * 4, 440 * 8, 440 * 16, 440 * 32])
+    .tickFormat(d3.format(',.0f'))
+
+  const yAxis = d3.axisLeft(yRange)
+    .tickSize(0)
+    .ticks(0)
+    .tickValues([1])
+    .tickFormat(d3.format('.1f'))
+
+  const centerX = canvasWidth / 2
+  const centerY = canvasHeight / 2
+  const baseRadius = Math.min(centerX, centerY) * 0.6
+  const maxOffset = baseRadius * 0.4
+
+  function polarPath(data) {
+    const angleStep = (2 * Math.PI) / data.length;
+    let pathData = '';
+    data.forEach((d, i) => {
+      const amp = d / 255; // normalized amplitude
+      const radius = baseRadius + amp * maxOffset; // radial offset
+      const angle = i * angleStep;
+      const x = centerX + radius * Math.cos(angle);
+      const y = centerY + radius * Math.sin(angle);
+      pathData += (i === 0 ? 'M' : 'L') + x + ',' + y;
+    });
+    pathData += 'Z'; // close the shape into a loop
+    return pathData;
+  }
+
+
+  const path = svg.append('path')
+    .attr('fill', 'none')
+    .attr('stroke', opts.color || 'black')
+    .attr('stroke-width', 1.0)
+    .attr('opacity', 0.8)
+
+  function animate () {
+    fftNode.getByteFrequencyData(frequencyData)
+    path.attr('d', polarPath(Array.from(frequencyData)))
+    window.requestAnimationFrame(animate)
+  }
+
+  if (!opts.manuallyCallAnimate) animate()
+
+  const gainNode = audioCtx.createGain ? audioCtx.createGain() : audioCtx.createGainNode()
+  gainNode.gain.value = sensativity
+  gainNode.connect(fftNode)
+
+  const node = gainNode
+  node.ele = ele
+  node.svg = svg
+  node.animate = animate
+
+  return node
+}
+
+window.createSpectrum = createSpectrum
+</script>
+
+<script>
+
+/* global Tone, nn, d3, createWaveform, createSpectrum */
+  
+const aaah = 'https://upload.wikimedia.org/wikipedia/commons/6/65/Open_front_unrounded_vowel.ogg'
+const sampler = new Tone.Sampler({
+  urls: { 'C4': aaah }
+})
+
+sampler.toDestination()
+
+// UI
+nn.create('label')
+  .content('Press either c, a, m, p, e, v keys to play the cumbia!')
+  .addTo('body')
+
+nn.on('keydown', (e) => {
+  if (e.key === 'q') sampler.triggerAttack('C6')
+})
+
+nn.on('keyup', (e) => {
+  if (e.key === 'q') sampler.triggerRelease('C6')
+})
+
+
+// visualizations
+const spec = createSpectrum({
+  ele: '#spectrum-element',
+  width: '400px',
+  height: '400px',
+  background: 'black',
+  color: 'white',
+  range: [0, 8000],
+  left: 50,
+  top: 700
+})
+sampler.connect(spec)
+
+//const spec = createSpectrum({ range: [0, 8000] })
+
+//sampler.connect(spec)
+
+</script>
