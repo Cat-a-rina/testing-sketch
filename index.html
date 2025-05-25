@@ -124,22 +124,48 @@ window.createSpectrum = createSpectrum
 /* global Tone, nn, d3, createWaveform, createSpectrum  */
 
 //------Videos-------//
+const colombiaAM = 'ColombiaAcientoMolina.mp4'
+const argentinaR = 'ArgentinaRafaga.mp4'
 const mexicoLAA = 'MexicoLosAngelesAzulesVid.mp4'
-const colombiaAM = ''
+const peruLM = 'PeruLosMirlos10s.mp4'
+const elSalvadorLHF = 'SalvadorLosHermanosFlores.mp4'
+const venezuelaPL = 'VenuezelaPastorLopez.mp4'
+const venezuelaAudio = 'VenuezelaPastorLopezAUDIO.mp3'
+
 function loadVideo(musicVid) {
   nn.create('video').set({
   src: musicVid,
   autoplay: true,
+  muted: true,
   loop: true  })
   .addTo('body')
 }
+function loadVideoPlayer(musicVid) {
+  const player = new Tone.Player(musicVid)
+  player.toDestination()
   
-const aaah = 'https://upload.wikimedia.org/wikipedia/commons/6/65/Open_front_unrounded_vowel.ogg'
-const sampler = new Tone.Sampler({
-  urls: { 'C4': aaah }
+  const spec = createSpectrum({
+  ele: '#spectrum-element',
+  width: nn.width,
+  height: nn.height,
+  background: 'black',
+  color: 'blue',
+  range: [0, 8000],
 })
+  // const spec = createSpectrum({
+  //   range: [0, 8000]
+  // })
+  player.connect(spec)
+  return player
+  //player.start()
+}
+  
+// const aaah = 'https://upload.wikimedia.org/wikipedia/commons/6/65/Open_front_unrounded_vowel.ogg'
+// const sampler = new Tone.Sampler({
+//   urls: { 'C4': aaah }
+// })
 
-sampler.toDestination()
+// sampler.toDestination()
 
 // UI
 nn.create('label')
@@ -153,27 +179,33 @@ nn.create('label')
 })
   
 //Keys
-  
-nn.on('keydown', (e) => {
-  if (e.key === 'c') sampler.triggerAttack('C2')
-  if (e.key === 'a') sampler.triggerAttack('C6')
+let player 
+nn.on('keydown', async (e) => {
+  await Tone.start()
+  // if (e.key === 'c') sampler.triggerAttack('C2')
+  // if (e.key === 'a') sampler.triggerAttack('C6')
   if (e.key === 'm') {
-    sampler.triggerAttack('C6')
-    nn.on('keydown', loadVideo(mexicoLAA))
+    //sampler.triggerAttack('C4')
+    loadVideo(mexicoLAA)
+    const vplayer = loadVideoPlayer(venezuelaAudio)
+    vplayer.start()
   }
-  if (e.key === 'p') sampler.triggerAttack('C6')
-  if (e.key === 'e') sampler.triggerAttack('C6')
-  if (e.key === 'v') sampler.triggerAttack('C6')
-  })
+  // if (e.key === 'p') sampler.triggerAttack('C6')
+  // if (e.key === 'e') sampler.triggerAttack('C6')
+  // if (e.key === 'v') sampler.triggerAttack('C6')
+  // })
   
-nn.on('keyup', (e) => {
-  if (e.key === 'c') sampler.triggerRelease('C2')
-  if (e.key === 'a') sampler.triggerRelease('C6')
-  if (e.key === 'm') sampler.triggerRelease('C6')
-  if (e.key === 'p') sampler.triggerRelease('C6')
-  if (e.key === 'e') sampler.triggerRelease('C6')
-  if (e.key === 'v') sampler.triggerRelease('C6')
-  })
+// nn.on('keyup', (e) => {
+//   if (e.key === 'c') sampler.triggerRelease('C2')
+//   if (e.key === 'a') sampler.triggerRelease('C6')
+//   if (e.key === 'm') {
+//     sampler.triggerRelease('C6')
+    
+//   }
+//   if (e.key === 'p') sampler.triggerRelease('C6')
+//   if (e.key === 'e') sampler.triggerRelease('C6')
+//   if (e.key === 'v') sampler.triggerRelease('C6')
+   })
 
 
 // visualizations
@@ -185,7 +217,11 @@ const spec = createSpectrum({
   color: 'white',
   range: [0, 8000],
 })
-sampler.connect(spec)
+
+player.connect(spec)
+// loadVideoPlayer.connect(spec)
+//sampler.connect(spec)
+//Music video on top
 
 //const spec = createSpectrum({ range: [0, 8000] })
 
