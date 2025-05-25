@@ -6,12 +6,10 @@
 <script src="https://cdn.jsdelivr.net/gh/netizenorg/netnet-standard-library/build/nn.min.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
 <script src="https://algorithmicmusic.online/js/create-waveform.js"></script>
-
 <script>
-  
+
 //---------Modified Circle Spectrum---------//
 /* global d3, Tone */
-
 function createSpectrum (opts) {
   opts = opts || {}
   const ele = typeof opts.ele === 'string'
@@ -23,16 +21,17 @@ function createSpectrum (opts) {
     console.error('createSpectrum: "ele" expecting reference to <svg> element')
     return
   }
-
+  
+  ele.style.position = 'absolute'
   ele.style.display = 'block'
-  ele.style.width = opts.width || '700px'
+  ele.style.width = opts.width || '50px'
   ele.style.height = opts.height || '200px'
   ele.style.background = opts.background || 'transparent'
 
   const canvasWidth = parseInt(ele.style.width)
   const canvasHeight = parseInt(ele.style.height)
 
-  const margins = { top: 50, right: 10, bottom: 30, left: 20 }
+  const margins = { top: 60, right: 10, bottom: 30, left: 20 }
   const plotWidth = canvasWidth - margins.left - margins.right
   const plotHeight = canvasHeight - margins.top - margins.bottom
 
@@ -122,7 +121,18 @@ window.createSpectrum = createSpectrum
 
 <script>
 
-/* global Tone, nn, d3, createWaveform, createSpectrum */
+/* global Tone, nn, d3, createWaveform, createSpectrum  */
+
+//------Videos-------//
+const mexicoLAA = 'MexicoLosAngelesAzulesVid.mp4'
+const colombiaAM = ''
+function loadVideo(musicVid) {
+  nn.create('video').set({
+  src: musicVid,
+  autoplay: true,
+  loop: true  })
+  .addTo('body')
+}
   
 const aaah = 'https://upload.wikimedia.org/wikipedia/commons/6/65/Open_front_unrounded_vowel.ogg'
 const sampler = new Tone.Sampler({
@@ -133,28 +143,47 @@ sampler.toDestination()
 
 // UI
 nn.create('label')
-  .content('Press either c, a, m, p, e, v keys to play the cumbia!')
-  .addTo('body')
-
+  .content('Press either c, a, m, p, e, v keys to play cumbia!')
+  .addTo('body').css({
+  position: 'absolute',
+  top: nn.height/7,
+  left: nn.width/3.5,
+  color: 'white',
+  fontSize: '24px'
+})
+  
+//Keys
+  
 nn.on('keydown', (e) => {
-  if (e.key === 'q') sampler.triggerAttack('C6')
-})
-
+  if (e.key === 'c') sampler.triggerAttack('C2')
+  if (e.key === 'a') sampler.triggerAttack('C6')
+  if (e.key === 'm') {
+    sampler.triggerAttack('C6')
+    nn.on('keydown', loadVideo(mexicoLAA))
+  }
+  if (e.key === 'p') sampler.triggerAttack('C6')
+  if (e.key === 'e') sampler.triggerAttack('C6')
+  if (e.key === 'v') sampler.triggerAttack('C6')
+  })
+  
 nn.on('keyup', (e) => {
-  if (e.key === 'q') sampler.triggerRelease('C6')
-})
+  if (e.key === 'c') sampler.triggerRelease('C2')
+  if (e.key === 'a') sampler.triggerRelease('C6')
+  if (e.key === 'm') sampler.triggerRelease('C6')
+  if (e.key === 'p') sampler.triggerRelease('C6')
+  if (e.key === 'e') sampler.triggerRelease('C6')
+  if (e.key === 'v') sampler.triggerRelease('C6')
+  })
 
 
 // visualizations
 const spec = createSpectrum({
   ele: '#spectrum-element',
-  width: '400px',
-  height: '400px',
-  background: 'black',
+  width: nn.width,
+  height: nn.height,
+  //background: 'black',
   color: 'white',
   range: [0, 8000],
-  left: 50,
-  top: 700
 })
 sampler.connect(spec)
 
